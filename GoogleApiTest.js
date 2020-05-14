@@ -1,22 +1,32 @@
-import React, { Component } from 'react'
-import { View, Text, Image } from 'react-native'
+
+import React, { Component, useEffect } from 'react'
+import { NavigationContainer } from '@react-navigation/native';
+import { createStackNavigator } from '@react-navigation/stack';
+import { View, Text, Image, Button } from 'react-native'
 import { GoogleSignin, GoogleSigninButton, statusCodes } from '@react-native-community/google-signin';
 import { web } from './credentials.json'
-export default class GoogleApiTest extends Component {
+
+class HomeScreen extends Component {
     constructor(props) {
         super(props)
         this.state = {
             name: '',
             photo: null,
-            email: ''
+            email: '',
         }
+
     }
     render() {
         return (
-            <View>
-                <Text>
-                    Google Sign in
-                </Text>
+            <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
+                <Button
+                    title="Go to Details"
+                    // navigate means go to this route
+                    onPress={() => this.props.navigation.navigate('Details', {
+                        itemId: 86,
+                        otherParams: 'anything',
+                    })}
+                />
                 <GoogleSigninButton
                     style={{ width: 192, height: 72 }}
                     size={GoogleSigninButton.Size.Wide}
@@ -29,6 +39,7 @@ export default class GoogleApiTest extends Component {
             </View>
         )
     }
+
     componentDidMount() {
         GoogleSignin.configure({
             scopes: ['https://www.googleapis.com/auth/photoslibrary'], // what API you want to access on behalf of the user, default is email and profile
@@ -45,14 +56,14 @@ export default class GoogleApiTest extends Component {
         try {
             await GoogleSignin.hasPlayServices();
             const userInfo = await GoogleSignin.signIn();
-            console.log(JSON.stringify(userInfo, null, '\t'))
+            console.log(userInfo.user.name)
             // this.setState({ userInfo });
             this.setState({
                 name: userInfo.user.name,
                 email: userInfo.user.email,
-                photo:userInfo.user.photo
+                photo: userInfo.user.photo,
+                idToken: userInfo.idToken //get the user idToken
             })
-
         } catch (error) {
             if (error.code === statusCodes.SIGN_IN_CANCELLED) {
                 // user cancelled the login flow
@@ -65,5 +76,47 @@ export default class GoogleApiTest extends Component {
             }
             console.log(error)
         }
+    }
+}
+class DetailScreen extends Component {
+
+    render() {
+        const { itemId, otherParams } = this.props.route.params
+        return (
+            <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
+                <Text>Details Screen</Text>
+                <Text>itemId: {JSON.stringify(itemId)}</Text>
+                <Text>otherParam: {JSON.stringify(otherParams)}</Text>
+                <Button
+                    title="Go to Details... again"
+                    onPress={() =>
+                        this.props.navigation.push('Details', {
+                            itemId: Math.floor(Math.random() * 100),
+                        })
+                    }
+                />
+                <Button title="Go to Home" onPress={() => this.props.navigation.navigate('Home')} />
+                <Button title="Go back" onPress={() => this.props.navigation.goBack()} />
+                {/* <Button
+                    title="Go back to first screen in stack"
+                    // go back to the first screen in stack
+                    onPress={() => this.props.navigation.popToTop()}
+                /> */}
+            </View>
+        );
+    }
+}
+const Stack = createStackNavigator();
+export default class GoogleApiTest extends Component {
+    render() {
+        return (
+            <NavigationContainer>
+                <Stack.Navigator initialRouteName="Home">
+                    {/* initial route is Home */}
+                    <Stack.Screen name="Home" component={HomeScreen} options={{ title: 'Login' }} />
+                    <Stack.Screen name="Details" component={DetailScreen} options={{ title: 'Interact' }} />
+                </Stack.Navigator>
+            </NavigationContainer>
+        )
     }
 }
